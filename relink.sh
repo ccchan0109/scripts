@@ -6,24 +6,25 @@
 
 author="James Chan"
 email="ccchan0109@gmail.com"
-version="1.0.1"
-updateDate="2017/08/02"
+version="1.0.2"
+updateDate="2017/09/07"
 
 #------------------------------------------------------------------------------
 #	Parameteres
 #------------------------------------------------------------------------------
 
-project_name="Surveillance";
-platform="x64";
-dsm_version="6.0";
-
-tracked_files=$(git ls-files);
-untracked_files=$(git ls-files --others --exclude-standard);
-ignored_files=$(git ls-files --others -i --exclude-standard);
-
-files=$tracked_files;
+project_specified="Surveillance"
+platform="x64"
+dsm_version="6.0"
+projects=(
+	"Surveillance"
+	"SurvDevicePack"
+	"libssmodule"
+	"SurveillanceIVA"
+)
 
 CLEAR=no
+ALL_SVS_RELATED=no
 INCLUDE_IGNORED=no
 INCLUDE_UNTRACKED=no
 
@@ -48,14 +49,15 @@ popd()
 usage()
 {
 cat <<EOF
-usage: $0 [-c] [-r] [-i] [-u] [-s] [-p] [-v] [-s] [-h]
+usage: $0 [-a] [-c] [-r] [-i] [-u] [-s] [-p] [-v] [-s] [-h]
 
 OPTIONS:
+	-a		Relink Surveillance related projects
 	-c		Clear hard link entire folder by removing the target folder; you may rebuild code
 	-r		Relink by examing sperate files, default options
 	-i		Ignored files included
 	-u		Untracked files included
-	-s		Project Name, default is $project_name
+	-s		Specified project name, default is $project_specified
 	-p		Platform, default is $platform
 	-v		DSM version, default is $dsm_version
 	-h		Show usage
@@ -82,17 +84,17 @@ relink()
 {
 	pushd $src_folder
 
-	tracked_files=$(git ls-files);
-	untracked_files=$(git ls-files --others --exclude-standard);
-	ignored_files=$(git ls-files --others -i --exclude-standard);
-	files=$tracked_files;
+	tracked_files=$(git ls-files)
+	untracked_files=$(git ls-files --others --exclude-standard)
+	ignored_files=$(git ls-files --others -i --exclude-standard)
+	files=$tracked_files
 
-	if [ "$INCLUDE_IGNORED" == "yes" ]; then
+	if [ $INCLUDE_IGNORED == "yes" ]; then
 		echo "Include ignored files";
 		files="$files $ignored_files";
 	fi
 
-	if [ "$INCLUDE_UNTRACKED" == "yes" ]; then
+	if [ $INCLUDE_UNTRACKED == "yes" ]; then
 		echo "Include untracked files";
 		files="$files $untracked_files";
 	fi
@@ -122,7 +124,7 @@ relink()
 
 main()
 {
-	while getopts "hrcius:p:v:" OPTION
+	while getopts "hrciuas:p:v:" OPTION
 	do
 		case $OPTION in
 			h)
@@ -141,8 +143,11 @@ main()
 			u)
 				INCLUDE_UNTRACKED=yes
 				;;
+			a)
+				ALL_SVS_RELATED=yes
+				;;
 			s)
-				project_name=$OPTARG
+				project_specified=$OPTARG
 				;;
 			p)
 				platform=$OPTARG
@@ -157,22 +162,35 @@ main()
 		esac
 	done
 
-	src_folder="../$project_name/"
-	platform_folder="../../build_env/ds.$platform-$dsm_version/source/$project_name/"
+	if [ $ALL_SVS_RELATED != "yes" ]; then
+		projects=($project_specified)
+	fi
 
-	echo "The relink path is $platform_folder"
-	if [ "$CLEAR" == "yes" ]; then
-		read -p "Are you sure you want to clear relink? (y/n): " CONFIRM_CLEAR
-		if [ "$CONFIRM_CLEAR" != "y" ] && [ "$CONFIRM_CLEAR" != "Y" ]; then
-			CLEAR=no
+
+#	for project in ${projects[@]}; do
+#		echo $project
+#	done
+
+#	exit
+
+	for project in ${projects[@]}; do
+		src_folder="../$project/"
+		platform_folder="../../build_env/ds.$platform-$dsm_version/source/$project/"
+
+		echo "The relink path is $platform_folder"
+		if [ $CLEAR == "yes" ]; then
+			read -p "Are you sure you want to clear relink? (y/n): " CONFIRM_CLEAR
+			if [ "$CONFIRM_CLEAR" != "y" ] && [ "$CONFIRM_CLEAR" != "Y" ]; then
+				CLEAR=no
+			fi
 		fi
-	fi
 
-	if [ "$CLEAR" == "yes" ]; then
-		clearRelink
-	else
-		relink
-	fi
+		if [ $CLEAR == "yes" ]; then
+			clearRelink
+		else
+			relink
+		fi
+	done
 }
 
 main "$@"
