@@ -6,8 +6,8 @@
 
 author="James Chan"
 email="ccchan0109@gmail.com"
-version="1.0.2"
-updateDate="2017/09/07"
+version="1.0.3"
+updateDate="2017/09/11"
 
 #------------------------------------------------------------------------------
 #	Parameteres
@@ -111,6 +111,12 @@ relink()
 			continue;
 		fi
 
+		dir_path=$(dirname $ori_path)
+
+		if [ ! -d "$dir_path" ]; then
+			mkdir -p "$dir_path"
+		fi
+
 		echo "relink $new_path to $ori_path"
 		if [ -f "$ori_path" ]; then
 			rm "$ori_path"
@@ -166,13 +172,6 @@ main()
 		projects=($project_specified)
 	fi
 
-
-#	for project in ${projects[@]}; do
-#		echo $project
-#	done
-
-#	exit
-
 	for project in ${projects[@]}; do
 		src_folder="../$project/"
 		platform_folder="../../build_env/ds.$platform-$dsm_version/source/$project/"
@@ -180,7 +179,7 @@ main()
 		echo "The relink path is $platform_folder"
 		if [ $CLEAR == "yes" ]; then
 			read -p "Are you sure you want to clear relink? (y/n): " CONFIRM_CLEAR
-			if [ "$CONFIRM_CLEAR" != "y" ] && [ "$CONFIRM_CLEAR" != "Y" ]; then
+			if [ $CONFIRM_CLEAR != "y" ] && [ $CONFIRM_CLEAR != "Y" ]; then
 				CLEAR=no
 			fi
 		fi
