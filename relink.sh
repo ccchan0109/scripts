@@ -6,21 +6,21 @@
 
 author="James Chan"
 email="ccchan0109@gmail.com"
-version="1.0.3"
-updateDate="2017/09/11"
+version="1.0.4"
+updateDate="2020/11/26"
 
 #------------------------------------------------------------------------------
 #	Parameteres
 #------------------------------------------------------------------------------
 
+working_root="/svssrc/svs"
 project_specified="Surveillance"
 platform="x64"
-dsm_version="6.0"
+dsm_version="6.2"
 projects=(
 	"Surveillance"
 	"SurvDevicePack"
 	"libssmodule"
-	"SurveillanceIVA"
 )
 
 CLEAR=no
@@ -49,7 +49,7 @@ popd()
 usage()
 {
 cat <<EOF
-usage: $0 [-a] [-c] [-r] [-i] [-u] [-s] [-p] [-v] [-s] [-h]
+usage: $0 [-a] [-c] [-r] [-i] [-u] [-s] [-x] [-p] [-s] [-v] [-h]
 
 OPTIONS:
 	-a		Relink Surveillance related projects
@@ -58,6 +58,7 @@ OPTIONS:
 	-i		Ignored files included
 	-u		Untracked files included
 	-s		Specified project name, default is $project_specified
+	-x		Working root path, default is $working_root
 	-p		Platform, default is $platform
 	-v		DSM version, default is $dsm_version
 	-h		Show usage
@@ -99,7 +100,8 @@ relink()
 		files="$files $untracked_files";
 	fi
 
-	echo "Relink..."
+	echo "Begin Relink..."
+	count=0
 	for new_path in ${files[@]}; do
 		if [ ! -f "$new_path" ]; then
 			continue;
@@ -121,16 +123,17 @@ relink()
 		if [ -f "$ori_path" ]; then
 			rm "$ori_path"
 		fi
-
 		ln "$new_path" "$ori_path"
+		let count++
 	done
+	echo "Done for $count files"
 
 	popd
 }
 
 main()
 {
-	while getopts "hrciuas:p:v:" OPTION
+	while getopts "hrciuas:p:x:v:" OPTION
 	do
 		case $OPTION in
 			h)
@@ -158,6 +161,9 @@ main()
 			p)
 				platform=$OPTARG
 				;;
+			x)
+				working_root=$OPTARG
+				;;
 			v)
 				dsm_version=$OPTARG
 				;;
@@ -173,10 +179,24 @@ main()
 	fi
 
 	for project in ${projects[@]}; do
-		src_folder="../$project/"
-		platform_folder="../../build_env/ds.$platform-$dsm_version/source/$project/"
+		if [ ! -d "$project" ]; then
+			#User specify the name of project, and we find the path based on working root path
+			src_folder="$working_root/source/$project/"
+		else
+			#User directly specify the project path
+			src_folder="$project"
+			project=$(basename $project)
+		fi
+
+		platform_folder="$working_root/build_env/ds.$platform-$dsm_version/source/$project/"
+
+		if [ ! -d "$src_folder" ]; then
+			echo "Source Folder $src_folder not existed"
+			continue
+		fi
 
 		echo "The relink path is $platform_folder"
+
 		if [ $CLEAR == "yes" ]; then
 			read -p "Are you sure you want to clear relink? (y/n): " CONFIRM_CLEAR
 			if [ $CONFIRM_CLEAR != "y" ] && [ $CONFIRM_CLEAR != "Y" ]; then
