@@ -6,8 +6,8 @@
 
 author="James Chan"
 email="ccchan0109@gmail.com"
-version="1.0.4"
-updateDate="2020/11/26"
+version="1.0.5"
+updateDate="2022/4/6"
 
 #------------------------------------------------------------------------------
 #	Parameteres
@@ -15,8 +15,9 @@ updateDate="2020/11/26"
 
 working_root="/svssrc/svs"
 project_specified="Surveillance"
-platform="x64"
-dsm_version="6.2"
+platform="avoton"
+dsm_version="7.0"
+project_suffix="-virtual-dsm7"
 projects=(
 	"Surveillance"
 	"SurvDevicePack"
@@ -107,7 +108,7 @@ relink()
 			continue;
 		fi
 
-		ori_path="$platform_folder$new_path"
+		ori_path="$platform_folder/$new_path"
 		if [ "$ori_path" -ef "$new_path" ]; then
 			#hard link existed, do nothing
 			continue;
@@ -188,7 +189,12 @@ main()
 			project=$(basename $project)
 		fi
 
-		platform_folder="$working_root/build_env/ds.$platform-$dsm_version/source/$project/"
+		platform_folder="$working_root/build_env/ds.$platform-$dsm_version/source/$project"
+
+		if [ -L "$platform_folder" ]; then
+			#If it is symbolic link, we assume it is a virtual project
+			platform_folder="$platform_folder$project_suffix"
+		fi
 
 		if [ ! -d "$src_folder" ]; then
 			echo "Source Folder $src_folder not existed"
